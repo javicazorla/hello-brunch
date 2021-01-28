@@ -6,3 +6,8 @@ build-job:
   script: 
     - yarn
     - yarn build
+
+deploy-job:
+  stage: deploy
+  script:
+    - echo "Deploy"
