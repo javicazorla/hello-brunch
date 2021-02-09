@@ -15,7 +15,7 @@ pipeline {
         
         stage("Trivy Scan"){
             steps{
-                sh 'trivy filesystem -f json -o trivy-fs.json'
+                sh 'trivy filesystem -f json -o trivy-fs.json .'
                 sh 'trivy image --format json --output trivy-image.json hello-brunch'
             }
             post {
