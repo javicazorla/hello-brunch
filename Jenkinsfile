@@ -6,10 +6,16 @@ pipeline {
         ansiColor('xterm')
     }
 
-    stages {
+    stages { 
+        stage('Build') {
+            steps {
+                sh 'docker-compose build'
+            }
+        }
+        
         stage("Trivy Scan"){
             steps{
-                sh 'trivy image --format json --output trivy-results.json node:lts-buster'
+                sh 'trivy image --format json --output trivy-results.json hello-brunch'
             }
             post {
                 always {
@@ -21,11 +27,6 @@ pipeline {
             }
         }
         
-        stage('Build') {
-            steps {
-                sh 'docker-compose build'
-            }
-        }
         stage('Deploy') {
             steps {
                 sh 'docker-compose up -d'
