@@ -6,29 +6,51 @@ pipeline {
         ansiColor('xterm')
     }
 
-    stages {
-        stage("Trivy Scan"){
-            steps{
-                sh 'trivy image --format json --output trivy-results.json node:lts-buster'
-            }
-            post {
-                always {
-                    recordIssues(
-                    enabledForFailure: true,
-                    tool: trivy(pattern: '*.json')
-                    )
-                }
-            }
-        }
-        
+    stages { 
         stage('Build') {
             steps {
                 sh 'docker-compose build'
             }
         }
-        stage('Deploy') {
+        
+        stage("Trivy Scan"){
+            steps{
+                sh 'trivy filesystem -f json -o trivy-fs.json .'
+                sh 'trivy image --format json --output trivy-image.json hello-brunch'
+            }
+            post {
+                always {
+                    recordIssues(
+                    enabledForFailure: true,
+                    aggregatingResults: true,
+                    tool: trivy(pattern: 'trivy-*.json')
+                    )
+                }
+            }
+        }
+        
+        stage('Publish') {
             steps {
-                sh 'docker-compose up -d'
+                withDockerRegistry([
+                    credentialsId:"gitlab-registry",
+                    url:"http://10.250.4.2:5050"
+                ]){
+                    sh 'docker tag hello-brunch:latest 10.250.4.2:5050/root/hello-brunch:BUILD-1.${BUILD_NUMBER}'
+                    sh 'docker push 10.250.4.2:5050/root/hello-brunch:BUILD-1.${BUILD_NUMBER}'
+                    sh 'docker tag hello-brunch:latest 10.250.4.2:5050/root/hello-brunch:latest'
+                    sh 'docker push 10.250.4.2:5050/root/hello-brunch:latest'
+                    sshagent(['ssh-github']) {
+                        sh 'git tag BUILD-1.${BUILD_NUMBER}'
+                        sh 'git push --tags'
+                    }
+                }
+            }
+        }
+        stage('Deploy'){
+            steps {
+                sshagent(['otro-host']) {
+                    sh 'ssh deploy@10.250.4.2 -t -o "StrictHostKeyChecking no" "docker-compose pull && docker-compose up -d"'
+                }
             }
         }
     }
