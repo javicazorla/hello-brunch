@@ -5,4 +5,8 @@ services:
     image: hello-brunch
     build: .
     ports:
-      - "8080:80"
+      - "80:80"
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "tcp://10.250.4.2:5000"
