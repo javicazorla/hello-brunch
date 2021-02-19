@@ -7,6 +7,6 @@ services:
     ports:
       - "80:80"
     logging:
-      driver: loki
+      driver: fluentd 
       options:
-        loki-url: "http://10.250.4.2:3100/loki/api/v1/push"
+        fluentd-address: "10.250.4.2:24224"
